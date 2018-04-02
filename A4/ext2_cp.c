@@ -94,8 +94,8 @@ int main(int argc, char **argv) {
 	// if the input ends with '/' we just give the file same name as before
 	if (target_path[strlen(target_path) - 1] == '/'){
 		parent_dir = find_parent_dir(target_path);
-		char *old_name = strrchr(argv[2], '/');
-		strncpy(new_name, old_name + 1, strlen(old_name) - 1);
+		new_name = strrchr(argv[2], '/');
+		new_name ++;
 	}
 	// if the input give the new file name
 	else{
@@ -105,6 +105,7 @@ int main(int argc, char **argv) {
 		parent_dir_path[strlen(target_path) - strlen(new_name)] = '\0';
 		parent_dir = find_parent_dir(parent_dir_path);
 		free(parent_dir_path);
+		new_name ++;
 	}
 	// link the inode of the new dir to the blocks
 	if(check_file(get_inode_by_num(parent_dir->inode), new_name) != NULL){
@@ -117,12 +118,12 @@ int main(int argc, char **argv) {
 	file_entry->rec_len = entry_size(strlen(new_name));
 	file_entry->name_len = strlen(new_name);
 	file_entry->file_type = EXT2_FT_REG_FILE;
-	strncpy(file_entry->name, new_name, file_entry->name_len);
+	strncpy(file_entry->name, new_name, strlen(new_name));
+	printf("%s\n", file_entry->name);
 	add_entry_to_dir(parent_dir, file_entry);
 	// free
 	free(file_blocks);
 	free(target_path);
-
 	fclose(source_path);
 	return 0;
 } 

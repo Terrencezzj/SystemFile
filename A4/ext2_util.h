@@ -15,11 +15,12 @@ struct ext2_super_block *sb;
 // The blocks group descriptor
 struct ext2_group_desc *gd;
 // The inode table
-struct ext2_inode *inode_table;
+void *inode_table;
 // The block bitmap
 unsigned char *block_bitmap;
 // The inode bitmap
 unsigned char *inode_bitmap;
+int fixes_count;
 /* ----------------------- Utility functions ------------------------*/
 struct ext2_dir_entry *get_entry(struct ext2_inode *dir_inode, char * name);
 int initialize_new_dir(struct ext2_dir_entry *parent, char *name);
@@ -36,5 +37,7 @@ int add_entry_to_dir(struct ext2_dir_entry *parent_dir, struct ext2_dir_entry *n
 struct ext2_inode *get_inode_by_num(unsigned int num);
 struct ext2_dir_entry * find_parent_dir(char *path);
 struct ext2_dir_entry *check_file(struct ext2_inode *dir_inode, char * name);
-bool is_not_absolute(char *path);
-bool compare_mode_type(ext2_dir_entry *dir_entry, ext2_inode *inode);
+int is_not_absolute(char *path);
+int get_index(char *path);
+void fix_bitmaps();
+unsigned int report_inconsistency(char* field, char* bitmap, int expected, int actual);
