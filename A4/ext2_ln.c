@@ -14,12 +14,18 @@ int main(int argc, char *argv[]) {
 	char *source_path;
 	char *target_path;
 	char *target_dir_path;
+	char *target_filename;
 	bool flag = false;
 	int src_index;
 	int tgt_dir_index;
-	int exist_link;
+	int link_index;
+	int blocks_num;
+	int block_index;
 	struct ext2_inode *src;
-	struct ext2_inode *tgt_dir;
+	struct ext2_inode *tgt_dir_inode;
+	struct ext2_inode *link_inode;
+	struct ext2_dir_entry *tgt_dir_entry;
+	struct ext2_dir_entry *link_entry = malloc(sizeof(struct ext2_dir_entry));
 
 	// Initialization
 	// Check input
@@ -56,7 +62,7 @@ int main(int argc, char *argv[]) {
 
 	src_index = get_index(source_path);
 	//tgt_dir_index = get_dir_index(target_path);
-	src = inode_table + sizeof(struct ext2_inode) * (src_index - 1);
+	src = get_inode_by_num(src_index);
 	//tgt_dir = inode_table + sizeof(struct ext2_inode) * (tgt_dir_index - 1);
 	if (!flag && (src->i_mode & EXT2_S_IFDIR)) {
 		perror("HARDLINK TO DIR");
@@ -64,23 +70,70 @@ int main(int argc, char *argv[]) {
 	}
 
 	target_dir_path = dirname(target_path);
+	target_filename = basename(target_path);
 	tgt_dir_index = get_index(target_dir_path);
-	tgt_dir = inode_table + sizeof(struct ext2_inode) * (target_dir_path - 1);
-
-	// implement link
-	if (flag) {
-		int block_num = strlen(source_path) / EXT2_BLOCK_SIZE;
-
-	} else {
-		
+	tgt_dir_inode = get_inode_by_num(target_dir_index);
+	tgt_dir_entry = find_parent_dir(target_dir_path);
+	// Check if parent is directory
+	if(!tgt_dir_inode->i_mode & EXT2_S_IFDIR){
+        exit(ENOENT);
+	}
+	// Check if the link name exists
+	if (check_file(tgt_dir_inode, target_filename) != NULL) {
+		perror("LINKNAME EXISTS");
+		exit(EEXIST);
 	}
 
-	
+	// implement link
+	if (!flag) {
+		// HardLink
+		link_inode = src;
+		src->i_links_count++;
+	} else {
+		// softLink
+		blocks_num = strlen(source_path) / EXT2_BLOCK_SIZE;
+		if (strlen(source_path) % EXT2_BLOCK_SIZE != 0) {
+			blocks_num ++;
+		}
 
+        // Initialize inode
+        link_index = allocate_inode();
+        if (link_index == 0) {
+        	// No space for inode
+            perror("NO SPACE FOR INODE");
+            exit(ENOSPC);
+        }
 
-
-
-
-
+        link_inode = get_inode_by_num(link_index);
+        link_inode->i_mode = EXT2_S_IFLNK;
+		link_inode->i_uid = 0;
+		link_inode->i_gid = 0;
+		link_inode->osd1 = 0;
+		link_inode->i_generation = 0;
+		link_inode->i_file_acl = 0;
+		link_inode->i_dir_acl = 0;
+		link_inode->i_faddr = 0;
+		link_inode->extra[0] = 0;
+		link_inode->extra[1] = 0;
+		link_inode->extra[2] = 0;
+		link_inode->i_links_count = 1;
+		link_inode->i_size = strlen(source_path);	
+		// Initialize block.
+		block_index = allocate_block(blocks_num);
+		unsigned char *block = disk + block_index * EXT2_BLOCK_SIZE;
+		// Copy path
+    	memcpy(block, source_path, strlen(source_path));
+    
+    	// Initialize i_block
+    	inode->i_block[0] = block_index;
+		inode->i_blocks = blocks_num * 2;
+	}
+	// Set entry
+	link_entry->inode = link_inode;
+	link_entry->rec_len = entry_size(strlen(target_filename));
+	link_entry->name_len = strlen(target_filename);
+	link_entry->file_type = EXT2_FT_REG_FILE;
+	strncpy(link_entry->name, target_filename, link_entry->name_len);
+	add_entry_to_dir(tgt_dir_entry, link_entry);
 	return 0;
 }

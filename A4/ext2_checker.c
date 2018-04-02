@@ -189,7 +189,7 @@ void fix_looper(struct ext2_dir_entry *dir_entry) {
 /*
  * Main
  */
-int main(int argc, char const *argv[]) {
+int main(int argc, char **argv) {
 	// Variables
 	char *disk_image_path;
     // Initialization
