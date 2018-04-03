@@ -69,11 +69,13 @@ int main(int argc, char *argv[]) {
 		exit(EISDIR);
 	}
 	
+	// Get Dir path and filename from target path
 	char path_copy[strlen(target_path) + 1];
 	strncpy(path_copy, target_path, strlen(target_path));
 	path_copy[strlen(target_path)] = '\0';
 	target_dir_path = dirname(path_copy);
 	target_filename = basename(target_path);
+
 	printf("%s %s %s\n",target_path, target_dir_path, target_filename);
 	tgt_dir_index = get_index(target_dir_path);
 	tgt_dir_inode = get_inode_by_num(tgt_dir_index);
@@ -82,7 +84,7 @@ int main(int argc, char *argv[]) {
 	// Check if parent is directory
 	if(!tgt_dir_inode->i_mode & EXT2_S_IFDIR){
 		perror("PARENT OF LINK NOT DIR");
-        	exit(ENOENT);
+			exit(ENOENT);
 	}
 	// Check if the link name exists
 	if (check_file(tgt_dir_inode, target_filename) != NULL) {
@@ -106,16 +108,16 @@ int main(int argc, char *argv[]) {
 			blocks_num ++;
 		}
 
-        	// Initialize inode
-        	link_index = allocate_inode();
-        	if (link_index == 0) {
-        		// No space for inode
-            		perror("NO SPACE FOR INODE");
-            		exit(ENOSPC);
-        	}
+		// Initialize inode
+		link_index = allocate_inode();
+		if (link_index == 0) {
+			// No space for inode
+				perror("NO SPACE FOR INODE");
+				exit(ENOSPC);
+		}
 
-        	link_inode = get_inode_by_num(link_index);
-        	link_inode->i_mode = EXT2_S_IFLNK;
+		link_inode = get_inode_by_num(link_index);
+		link_inode->i_mode = EXT2_S_IFLNK;
 		link_inode->i_uid = 0;
 		link_inode->i_gid = 0;
 		link_inode->osd1 = 0;
@@ -134,10 +136,10 @@ int main(int argc, char *argv[]) {
 		sb->s_free_blocks_count -= blocks_num;
 		unsigned char *block = disk + block_index[0] * EXT2_BLOCK_SIZE;
 		// Copy path
-    		memcpy(block, source_path, strlen(source_path));
-    
-    		// Initialize i_block
-    		link_inode->i_block[0] = block_index[0];
+		memcpy(block, source_path, strlen(source_path));
+
+		// Initialize i_block
+		link_inode->i_block[0] = block_index[0];
 		link_inode->i_blocks = blocks_num * 2;
 		link_entry->file_type = EXT2_FT_SYMLINK;
 	}
