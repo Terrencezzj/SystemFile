@@ -37,7 +37,7 @@ INODE 2: {size:1024, links:4, blocks:2, dtime: 0}
   TYPE: EXT2_S_IFDIR
 INODE 11: {size:12288, links:2, blocks:24, dtime: 0}
   TYPE: EXT2_S_IFDIR
-INODE 12: {size:1024, links:4, blocks:2, dtime: 0}
+INODE 12: {size:1024, links:3, blocks:2, dtime: 0}
   Inode References (Index->Block Number): 0->127 
   TYPE: EXT2_S_IFDIR
 INODE 13: {size:1024, links:2, blocks:2, dtime: 0}

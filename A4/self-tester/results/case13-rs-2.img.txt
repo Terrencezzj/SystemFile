@@ -2,14 +2,14 @@
 Superblock
   Inodes count:32
   Blocks count:128
-  Free blocks count:100
-  Free inodes count:16
+  Free blocks count:99
+  Free inodes count:15
 Blockgroup
   Block bitmap:3
   Inode bitmap:4
   Inode table:5
-  Free blocks count:100
-  Free inodes count:16
+  Free blocks count:99
+  Free inodes count:15
   Used directories:4
 Inode bitmap: 11111111111011101010000000000000
 Block bitmap: 1111111111111111111111011101010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -26,7 +26,8 @@ Used inodes (Inode NUMBER): 1 2 3 4 5 6 7 8 9 10 11 13 14 15 17 19
 [13] 'level1' EXT2_FT_DIR; rec length: 16 
     [13] '.' EXT2_FT_DIR; rec length: 12 
     [ 2] '..' EXT2_FT_DIR; rec length: 12 
-    [17] 'd.txt' EXT2_FT_REG_FILE; rec length: 32 
+    [17] 'd.txt' EXT2_FT_REG_FILE; rec length: 16 
+    [18] 'e.txt' EXT2_FT_REG_FILE; rec length: 16 
     [19] 'f.txt' EXT2_FT_REG_FILE; rec length: 968 
 [14] 'b.txt' EXT2_FT_REG_FILE; rec length: 16 
 [15] 'folder2' EXT2_FT_DIR; rec length: 932 
