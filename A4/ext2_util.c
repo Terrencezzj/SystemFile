@@ -49,7 +49,7 @@ struct ext2_dir_entry *get_entry(struct ext2_inode *dir_inode, char *name){
 		while(total_size < EXT2_BLOCK_SIZE){
 			cur_dir = (void *)cur_dir + rec_len;
 			char *file_name = malloc(cur_dir->name_len + 1);
-			file_name = strncpy(file_name, cur_dir->name, cur_dir->name_len);
+			strncpy(file_name, cur_dir->name, cur_dir->name_len);
 			file_name[cur_dir->name_len] = '\0';
 			// find the correspond directroy
 			if(strcmp(file_name, name) == 0){
@@ -96,9 +96,8 @@ struct ext2_dir_entry *check_file(struct ext2_inode *dir_inode, char *name){
 		while(total_size < EXT2_BLOCK_SIZE){
 			cur_dir = (void *)cur_dir + rec_len;
 			char *file_name = malloc(cur_dir->name_len + 1);
-			file_name = strncpy(file_name, cur_dir->name, cur_dir->name_len);
+			strncpy(file_name, cur_dir->name, cur_dir->name_len);
 			file_name[cur_dir->name_len] = '\0';
-			printf("Compare: %s  %s %d\n", file_name, name, strcmp(file_name, name));
 			// find the correspond directroy
 			if(strcmp(file_name, name) == 0){
 				if(cur_dir->file_type == EXT2_FT_REG_FILE){
@@ -114,49 +113,68 @@ struct ext2_dir_entry *check_file(struct ext2_inode *dir_inode, char *name){
 	return NULL;
 }
 
-// unsigned int remove_entry(struct ext2_dir_entry *parent, char *name){
-// 	struct ext2_dir_entry * cur_dir;
-// 		if (name == NULL){
-// 		return NULL;
-// 	}
-// 	int name_length = strlen(name);
-// 	if (name_length > EXT2_NAME_LEN){
-// 		exit(1);
-// 	}
-	
-// 	for (i = 0; i < dir_inode->i_blocks / 2; i++){
-// 		int total_size = 0;
-// 		int rec_len = 0;
-// 		if (i < 12){
-// 			cur_dir = (struct ext2_dir_entry *) (disk + dir_inode->i_block[i] * EXT2_BLOCK_SIZE);
-// 		}
-// 		// the i_block is contained in the indirect pointer
-// 		else{
-// 			// break;
-// 			unsigned int *indirect_block = (void *)(disk + (dir_inode->i_block[12]) * EXT2_BLOCK_SIZE);
-// 			unsigned int block_index = indirect_block[i - 12] - 1;
-// 			cur_dir = (struct ext2_dir_entry *) (disk + block_index * EXT2_BLOCK_SIZE);
-// 		}
-// 		while(total_size < EXT2_BLOCK_SIZE){
-// 			cur_dir = (void *)cur_dir + rec_len;
-// 			char *file_name = malloc(cur_dir->name_len + 1);
-// 			file_name = strncpy(file_name, cur_dir->name, cur_dir->name_len);
-// 			file_name[cur_dir->name_len + 1] = '\0';
-// 			// find the correspond directroy
-// 			if(strcmp(file_name, name) == 0){
-// 				if(cur_dir->file_type == EXT2_FT_REG_FILE){
-// 					return cur_dir;
-// 				}
-// 			}
-// 			free(file_name);
-// 			rec_len = cur_dir->rec_len;
-// 			total_size += rec_len;						 						
-// 		}
+unsigned int remove_entry(struct ext2_inode *parent_inode, char *name){
+	struct ext2_dir_entry * cur_dir;
+	struct ext2_dir_entry * prev_dir;
+	char *file_name;
+	unsigned int result;
+	if (name == NULL){
+		return 0;
+	}
+	int name_length = strlen(name);
+	if (name_length > EXT2_NAME_LEN){
+		exit(1);
+	}
+	int i;
+	for (i = 0; i < parent_inode->i_blocks / 2; i++){
+		int total_size = 0;
+		if (i < 12){
+			prev_dir = (struct ext2_dir_entry *) (disk + parent_inode->i_block[i] * EXT2_BLOCK_SIZE);
+		}
+		// the i_block is contained in the indirect pointer
+		else{
+			// break;
+			unsigned int *indirect_block = (void *)(disk + (parent_inode->i_block[12]) * EXT2_BLOCK_SIZE);
+			unsigned int block_index = indirect_block[i - 12] - 1;
+			prev_dir = (struct ext2_dir_entry *) (disk + block_index * EXT2_BLOCK_SIZE);
+		}
+		// if the delete enry is the first entry
+		file_name = malloc(prev_dir->name_len + 1);
+		strncpy(file_name, prev_dir->name, prev_dir->name_len);
+		file_name[prev_dir->name_len] = '\0';
+		// find the correspond directroy
+		if((strcmp(file_name, name) == 0) && prev_dir->inode != 0){
+			if((prev_dir->file_type == EXT2_FT_REG_FILE) ||\
+			 (prev_dir->file_type == EXT2_FT_SYMLINK)){
+				result = prev_dir->inode;
+				prev_dir->inode = 0;
+				// free(file_name);
+				return result;
+			}
+		}
+		free(file_name);
+		while(total_size < EXT2_BLOCK_SIZE){
+			cur_dir = (void *)prev_dir + prev_dir->rec_len;
+			file_name = malloc(cur_dir->name_len + 1);
+			strncpy(file_name, cur_dir->name, cur_dir->name_len);
+			file_name[cur_dir->name_len] = '\0';
+			// find the correspond directroy
+			if((strcmp(file_name, name) == 0) && cur_dir->inode != 0){
+				if((cur_dir->file_type == EXT2_FT_REG_FILE) || \
+					(cur_dir->file_type == EXT2_FT_SYMLINK)){
+					prev_dir->rec_len += cur_dir->rec_len;
+					return cur_dir->inode;
+				}
+			}
+			free(file_name);
+			total_size += cur_dir->rec_len;
+			prev_dir = (void *)prev_dir + prev_dir->rec_len;			 						
+		}
 
-// 	}
+	}
+	return 0;
 
-
-// }
+}
 struct ext2_inode *get_inode_by_num(unsigned int num){
 	if (num <= 0){
 		return NULL;
@@ -166,6 +184,8 @@ struct ext2_inode *get_inode_by_num(unsigned int num){
 		return result;
 	}
 }
+
+
 // create a new directory and give it inode and give it block
 int initialize_new_dir(struct ext2_dir_entry *parent, char *name){
 	int name_len = strlen(name);
@@ -208,6 +228,8 @@ int initialize_new_dir(struct ext2_dir_entry *parent, char *name){
 	new_block->rec_len = EXT2_BLOCK_SIZE;
 	new_block->file_type = EXT2_FT_DIR;
 	strncpy(new_block->name, ".", 1);
+	struct ext2_inode *new_inode = get_inode_by_num(new_inode_index + 1);
+	new_inode->i_links_count ++;
 	// add ".." dir entry in new dir
 	struct ext2_dir_entry *parent_dir = malloc(sizeof(struct ext2_dir_entry));
 	parent_dir->inode = parent->inode;
@@ -244,8 +266,17 @@ int add_entry_to_dir(struct ext2_dir_entry *parent_dir, struct ext2_dir_entry *n
 	for (i = 0; i < parent_block_num; i++){
 		int total_size = 0;
 		int rec_len = 0;
-		struct ext2_dir_entry * cur_dir = (struct ext2_dir_entry *) (disk \
-			+ (parent_inode->i_block[i]) * EXT2_BLOCK_SIZE);
+		struct ext2_dir_entry *cur_dir;
+		if(i < 12){
+			cur_dir = (struct ext2_dir_entry *) (disk + (parent_inode->i_block[i]) * EXT2_BLOCK_SIZE);
+		}
+		else{
+			unsigned int *indirect_block = (void *)(disk + (parent_inode->i_block[12]) * EXT2_BLOCK_SIZE);
+			unsigned int block_index = indirect_block[i - 12] - 1;
+			cur_dir = (struct ext2_dir_entry *) (disk \
+			+ block_index * EXT2_BLOCK_SIZE);
+		}
+
 		while((total_size + cur_dir->rec_len) < EXT2_BLOCK_SIZE){
 			cur_dir = (void *)cur_dir + cur_dir->rec_len;
 			rec_len = cur_dir->rec_len;
@@ -263,9 +294,6 @@ int add_entry_to_dir(struct ext2_dir_entry *parent_dir, struct ext2_dir_entry *n
 			cur_dir->name_len = new_dir->name_len;
 			cur_dir->file_type = new_dir->file_type;
 			strncpy(cur_dir->name, new_dir->name, new_dir->name_len);
-			printf("Add: %s\n", cur_dir->name);
-			printf("Add: %d\n", cur_dir->inode);
-			parent_inode->i_links_count ++;
 			return 0;
 		}
 		else{
@@ -315,31 +343,35 @@ int set_inode(unsigned int new_inode_index, unsigned short filetype, unsigned in
 	inode->i_uid = 0;
 	inode->i_gid = 0;
 	inode -> i_generation = 0;
-	for (i=0; i < i_blocks_num; i++){
-		if (i < 12){
+	if (i_blocks_num <= 12){
+		for (i=0; i < i_blocks_num; i++){
 			inode->i_block[i] = i_block[i] + 1;
 		}
-		else{
-			break;
-			//inode->i_block[12][i - 12] = i_block[i] + 1;
+	}
+	else{
+		for (i=0; i < i_blocks_num - 1; i++){
+			if (i < 12){
+				inode->i_block[i] = i_block[i] + 1;
+			}
+			else{
+				inode->i_block[12] = i_block[12] + 1;
+				unsigned int *indirect_block = (void *)(disk + (inode->i_block[12]) * EXT2_BLOCK_SIZE);
+				indirect_block[i - 12] = i_block[i + 1] + 1;
+			}
 		}
 	}
+	// for (i=0; i < i_blocks_num; i++){
+	// 	if (i < 12){
+	// 		inode->i_block[i] = i_block[i] + 1;
+	// 	}
+	// 	else{
+	// 		//break;
+	// 		unsigned int *indirect_block = (void *)(disk + (inode->i_block[12]) * EXT2_BLOCK_SIZE);
+	// 		indirect_block[i - 12] = i_blocks[i] + 1;
+	// 		//inode->i_block[12][i - 12] = i_block[i] + 1;
+	// 	}
+	// }
 	return 0;
-}
-
-
-/*
-* get the bit of the inode bitmap by index, return should be 1 or 0
-*/
-int get_inode_bitmap(unsigned int index){
-	index --;
-	int offset = index % BYTE_LENGTH;
-	int prefix = index / BYTE_LENGTH;
-	if (inode_bitmap[prefix] & (1 << offset)){
-		return 1;
-	} else{
-		return 0;
-	}
 }
 
 
@@ -359,21 +391,6 @@ void set_inode_bitmap(unsigned int index, int num){
 }
 
 
-/*
-* get the bit of the inode bitmap by index, return should be 1 or 0
-*/
-int get_block_bitmap(unsigned int index){
-	index --;
-	int offset = index % BYTE_LENGTH;
-	int prefix = index / BYTE_LENGTH;
-	if (block_bitmap[prefix] & (1 << offset)){
-		return 1;
-	} else{
-		return 0;
-	}
-}
-
-
 void set_block_bitmap(unsigned int index, int num){
 	int offset = index % 8;
 	int prefix = index / 8;
@@ -386,7 +403,8 @@ void set_block_bitmap(unsigned int index, int num){
 	}
 }
 
-unsigned int* allocate_block(int block_num){
+
+unsigned int *allocate_block(int block_num){
 	if(gd->bg_free_blocks_count < block_num){
 		return NULL;
 	}
@@ -408,6 +426,8 @@ unsigned int* allocate_block(int block_num){
 	}
 	return NULL;
 }
+
+
 unsigned int allocate_inode(){
 	unsigned int index = 0;
 	int i, j;
@@ -422,7 +442,8 @@ unsigned int allocate_inode(){
 	return 0;
 }
 
-struct ext2_dir_entry * find_parent_dir(char *path){
+
+struct ext2_dir_entry *find_parent_dir(char *path){
 	struct ext2_inode *root_inode = (struct ext2_inode *)(inode_table + (EXT2_ROOT_INO - 1) * sizeof(struct ext2_inode));
 	char *token = strtok(path, "/");
 	struct ext2_dir_entry *cur_dir = (struct ext2_dir_entry *)(disk + (root_inode->i_block[0]) * EXT2_BLOCK_SIZE); 
@@ -443,6 +464,28 @@ struct ext2_dir_entry * find_parent_dir(char *path){
 };
 
 
+struct ext2_inode *find_parent_inode(char *path){
+	struct ext2_inode *cur_inode = (struct ext2_inode *)(inode_table + (EXT2_ROOT_INO - 1) * sizeof(struct ext2_inode));
+	char *token = strtok(path, "/");
+	struct ext2_dir_entry *cur_dir;
+	// if the path is "/", we return the root inode
+	if (token == NULL){
+		return cur_inode;
+	}
+	// search through root inode to get the next entry
+	while (token != NULL){
+		cur_dir = get_entry(cur_inode, token);
+		if (cur_dir == NULL){
+			printf("Error: the absolute path doesnot exist\n");
+			exit(ENOENT);
+		}
+		token = strtok(NULL, "/");
+		cur_inode = get_inode_by_num(cur_dir->inode);
+	}
+	return cur_inode;
+}
+
+
 int mount_ex2(char *disk_path){
 	int fd = open(disk_path, O_RDWR);
 	disk = mmap(NULL, 128 * 1024, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
@@ -457,7 +500,6 @@ int mount_ex2(char *disk_path){
 	inode_bitmap = disk + gd->bg_inode_bitmap * EXT2_BLOCK_SIZE;
 	return 0;
 }
-
 
 /*
  * Return if the path is an absolute path

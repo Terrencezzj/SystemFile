@@ -44,7 +44,13 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 	unsigned long filesize = fileStat.st_size;
-	int file_blocks_num = filesize / EXT2_BLOCK_SIZE + 1;
+	int file_blocks_num;
+	if(filesize % EXT2_BLOCK_SIZE == 0){
+		file_blocks_num = filesize / EXT2_BLOCK_SIZE;
+	}
+	else{
+		file_blocks_num = filesize / EXT2_BLOCK_SIZE + 1;
+	}
 	// allocate inodes for the source file
 	int file_inode_index = allocate_inode();
 	if (file_inode_index == 0){
@@ -71,23 +77,56 @@ int main(int argc, char **argv) {
 	unsigned char *source_file_p = mmap(NULL, filesize, PROT_READ | PROT_WRITE, \
 		MAP_PRIVATE, fileno(source_path), 0);
 	int i;
-	for(i = 0; i < copy_num - 1; i++){
-		set_block_bitmap(file_blocks[i], 1);
-		memcpy(disk + (file_blocks[i] + 1) * EXT2_BLOCK_SIZE, source_file_p, EXT2_BLOCK_SIZE);
-		source_file_p += EXT2_BLOCK_SIZE;
-	}
-	set_block_bitmap(file_blocks[copy_num - 1], 1);
-	memcpy(disk + (file_blocks[copy_num - 1] + 1) * EXT2_BLOCK_SIZE, source_file_p,\
-	 filesize - (copy_num - 1) * EXT2_BLOCK_SIZE);
-	if(file_blocks_num > 12){
-		set_block_bitmap(file_blocks[file_blocks_num - 1], 1);
-		unsigned int *indirect_block = (void *)(disk + (file_blocks[file_blocks_num - 1])\
-		 * EXT2_BLOCK_SIZE);
-		for(i = 12; i < copy_num; i++){
-			*indirect_block = file_blocks[i] + 1;
+	if (file_blocks_num > 12){
+		for(i = 0; i < 12; i++){
+			set_block_bitmap(file_blocks[i], 1);
+			memcpy(disk + (file_blocks[i] + 1) * EXT2_BLOCK_SIZE, source_file_p, EXT2_BLOCK_SIZE);
+			source_file_p += EXT2_BLOCK_SIZE;
+		}
+		set_block_bitmap(file_blocks[12], 1);
+		unsigned int *indirect_block = (void *)(disk + (file_blocks[12]) * EXT2_BLOCK_SIZE);
+		for(i = 12; i < copy_num - 1; i++){
+			set_block_bitmap(file_blocks[i + 1], 1);
+			memcpy(disk + (file_blocks[i + 1] + 1) * EXT2_BLOCK_SIZE, source_file_p, EXT2_BLOCK_SIZE);
+			source_file_p += EXT2_BLOCK_SIZE;
+			*indirect_block = file_blocks[i + 1] + 1;
 			indirect_block ++;
 		}
+		set_block_bitmap(file_blocks[copy_num], 1);
+		memcpy(disk + (file_blocks[copy_num] + 1) * EXT2_BLOCK_SIZE, source_file_p,\
+			filesize - (copy_num - 1) * EXT2_BLOCK_SIZE);
+		*indirect_block = file_blocks[copy_num] + 1;
+		indirect_block ++;
 	}
+	else{
+		for(i = 0; i < copy_num - 1; i++){
+			set_block_bitmap(file_blocks[i], 1);
+			memcpy(disk + (file_blocks[i] + 1) * EXT2_BLOCK_SIZE, source_file_p, EXT2_BLOCK_SIZE);
+			source_file_p += EXT2_BLOCK_SIZE;
+		}
+		set_block_bitmap(file_blocks[copy_num - 1], 1);
+		memcpy(disk + (file_blocks[copy_num - 1] + 1) * EXT2_BLOCK_SIZE, source_file_p,\
+			filesize - (copy_num - 1) * EXT2_BLOCK_SIZE);
+	}
+
+
+	// for(i = 0; i < copy_num - 1; i++){
+	// 	set_block_bitmap(file_blocks[i], 1);
+	// 	memcpy(disk + (file_blocks[i] + 1) * EXT2_BLOCK_SIZE, source_file_p, EXT2_BLOCK_SIZE);
+	// 	source_file_p += EXT2_BLOCK_SIZE;
+	// }
+	// set_block_bitmap(file_blocks[copy_num - 1], 1);
+	// memcpy(disk + (file_blocks[copy_num - 1] + 1) * EXT2_BLOCK_SIZE, source_file_p,\
+	//  filesize - (copy_num - 1) * EXT2_BLOCK_SIZE);
+	// if(file_blocks_num > 12){
+	// 	set_block_bitmap(file_blocks[file_blocks_num - 1], 1);
+	// 	unsigned int *indirect_block = (void *)(disk + (file_blocks[file_blocks_num - 1])\
+	// 	 * EXT2_BLOCK_SIZE);
+	// 	for(i = 12; i < copy_num; i++){
+	// 		*indirect_block = file_blocks[i] + 1;
+	// 		indirect_block ++;
+	// 	}
+	// }
 	// get the target path
 	struct ext2_dir_entry *parent_dir;
 	char *new_name;
@@ -119,7 +158,6 @@ int main(int argc, char **argv) {
 	file_entry->name_len = strlen(new_name);
 	file_entry->file_type = EXT2_FT_REG_FILE;
 	strncpy(file_entry->name, new_name, strlen(new_name));
-	printf("%s\n", file_entry->name);
 	add_entry_to_dir(parent_dir, file_entry);
 	// free
 	free(file_blocks);

@@ -13,16 +13,16 @@
  * Check if the input entry is valid entry
  */
 unsigned char is_entry(struct ext2_dir_entry *entry){
-  	if ((entry->inode <= 11 &&  entry->inode > 2) ||
-  		(entry->inode > NUM_INODES) ||
-  		(entry->rec_len > EXT2_BLOCK_SIZE) ||
-  		(entry->name_len > EXT2_NAME_LEN) ||
-  		(entry->rec_len < 0) ||
-  		(entry->file_type > EXT2_FT_MAX)
-  		){
-    	return 1;
-  	}
-  	return 0;
+	if ((entry->inode <= 11 &&  entry->inode > 2) ||
+		(entry->inode > NUM_INODES) ||
+		(entry->rec_len > EXT2_BLOCK_SIZE) ||
+		(entry->name_len > EXT2_NAME_LEN) ||
+		(entry->rec_len < 0) ||
+		(entry->file_type > EXT2_FT_MAX)
+		){
+		return 1;
+	}
+	return 0;
 }
 
 
@@ -46,14 +46,14 @@ struct ext2_dir_entry *find_deleted_entry(struct ext2_dir_entry *parent_entry,
 	for (int i = 0; i < parent_inode->i_blocks / 2; i++){
 		int total_size = 0;
 		int rec_len = 0;
-		if (i < 13){
+		if (i < 12){
 			cur_dir = (struct ext2_dir_entry *) (disk + dir_inode->i_block[i] * EXT2_BLOCK_SIZE);
 		}
 		// the i_block is contained in the indirect pointer
 		else{
 			// break;
 			unsigned int block_index = ((unsigned int *)
-				(disk + inode->i_block[12] * EXT2_BLOCK_SIZE))[i - 13];
+				(disk + inode->i_block[12] * EXT2_BLOCK_SIZE))[i - 12];
 			cur_dir = (struct ext2_dir_entry *) (disk + block_index * EXT2_BLOCK_SIZE);
 		}
 		if (strncmp(cur_dir->name, filename, cur_dir->name_len) == 0){
@@ -103,51 +103,51 @@ struct ext2_dir_entry *find_deleted_entry(struct ext2_dir_entry *parent_entry,
  */
 void restore(struct ext2_dir_entry *entry, struct ext2_dir_entry *prev_entry, int rec_len){
 	// Unrecoverable if the inode has been reused.
-  	if (get_inode_bitmap(entry->inode)){
+	if (get_inode_bitmap(entry->inode)){
 		perror("UNRECOVERBLE");
 		exit(ENOENT);
 	}
-  	struct ext2_inode *inode = get_inode_by_num(entry->inode);
-  	// Loop through for the first time to check every data block
-  	for (int i = 0; i < inode->i_blocks / 2; i++){
+	struct ext2_inode *inode = get_inode_by_num(entry->inode);
+	// Loop through for the first time to check every data block
+	for (int i = 0; i < inode->i_blocks / 2; i++){
 		unsigned int block_index;
 		if (i < 13){
-	  		block_index = inode->i_block[i];
+			block_index = inode->i_block[i];
 		} else {
-	  		unsigned int *indirect_block = (unsigned int *)
-	  			(disk + inode->i_block[12] * EXT2_BLOCK_SIZE);
-	  		block_index = indirect_block[i - 13];
+			unsigned int *indirect_block = (unsigned int *)
+				(disk + inode->i_block[12] * EXT2_BLOCK_SIZE);
+			block_index = indirect_block[i - 13];
 		}
 		// Unrecoverable if any of the data blocks has been reused.
 		if (get_block_bitmap(block_index)){
 			perror("UNRECOVERBLE");
 			exit(ENOENT);
 		}
-  	}
-  	// Check finished, Restore inode
-  	// Loop through for the second time to restore every data blocks
-  	for (int i = 0; i < inode->i_blocks/2; i++){
+	}
+	// Check finished, Restore inode
+	// Loop through for the second time to restore every data blocks
+	for (int i = 0; i < inode->i_blocks/2; i++){
 		unsigned int block_index;
 		if (i < 13){
-	  		block_index = inode->i_block[i];
+			block_index = inode->i_block[i];
 		} else {
-	  		unsigned int *indirect_block = (unsigned int *)
-	  			(disk + inode->i_block[12] * EXT2_BLOCK_SIZE);
-	  		block_index = indirect_block[i - 13];
+			unsigned int *indirect_block = (unsigned int *)
+				(disk + inode->i_block[12] * EXT2_BLOCK_SIZE);
+			block_index = indirect_block[i - 13];
 		}
 		set_block_bitmap(block_index, 1);
 		sb->s_free_blocks_count--;
 		gd->bg_free_blocks_count--;
-  	}
-  	// Restore inode
-  	set_inode_bitmap(entry->inode, 1);
-  	sb->s_free_inodes_count--;
-  	gd->bg_free_inodes_count--;
-  	inode->i_dtime = 0;
-  	inode->i_links_count++;
-  	// Restore entry
-  	entry->rec_len = prev_entry->rec_len - rec_len;
-  	prev_entry->rec_len = rec_len;
+	}
+	// Restore inode
+	set_inode_bitmap(entry->inode, 1);
+	sb->s_free_inodes_count--;
+	gd->bg_free_inodes_count--;
+	inode->i_dtime = 0;
+	inode->i_links_count++;
+	// Restore entry
+	entry->rec_len = prev_entry->rec_len - rec_len;
+	prev_entry->rec_len = rec_len;
 }
 
 

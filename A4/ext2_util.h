@@ -35,10 +35,12 @@ int set_inode(unsigned int new_inode_index, unsigned short filetype, unsigned in
 		unsigned short i_links_count, unsigned int i_blocks_num, \
 		unsigned int *i_block);
 unsigned short entry_size(unsigned char name_len);
+unsigned int remove_entry(struct ext2_inode *parent_inode, char *name);
 int add_entry_to_dir(struct ext2_dir_entry *parent_dir, struct ext2_dir_entry *new_dir);
 struct ext2_inode *get_inode_by_num(unsigned int num);
 struct ext2_dir_entry * find_parent_dir(char *path);
 struct ext2_dir_entry *check_file(struct ext2_inode *dir_inode, char * name);
+struct ext2_inode *find_parent_inode(char *path);
 int is_not_absolute(char *path);
 int get_index(char *path);
 int is_not_absolute(char *path);
