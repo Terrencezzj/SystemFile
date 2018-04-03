@@ -2,13 +2,13 @@
 Superblock
   Inodes count:32
   Blocks count:128
-  Free blocks count:101
+  Free blocks count:100
   Free inodes count:17
 Blockgroup
   Block bitmap:3
   Inode bitmap:4
   Inode table:5
-  Free blocks count:101
+  Free blocks count:100
   Free inodes count:17
   Used directories:4
 Inode bitmap: 11111111111110011000000000000000
@@ -27,13 +27,11 @@ Used inodes (Inode NUMBER): 1 2 3 4 5 6 7 8 9 10 11 12 13 16 17
     [12] '.' EXT2_FT_DIR; rec length: 12 
     [ 2] '..' EXT2_FT_DIR; rec length: 12 
     [13] 'level2' EXT2_FT_DIR; rec length: 1000 
-        [13] '.' EXT2_FT_DIR; rec length: 12 
-        [12] '..' EXT2_FT_DIR; rec length: 32 
-        [16] 'bfile' EXT2_FT_REG_FILE; rec length: 980 
-[17] 'afile' EXT2_FT_REG_FILE; rec length: 944 
+[17] 'afile' EXT2_FT_REG_FILE; rec length: 16 
+[13] 'bfilesoftlink' EXT2_FT_REG_FILE; rec length: 928 
 
 == INODE DUMP ==
-INODE 2: {size:1024, links:4, blocks:2, dtime: 0}
+INODE 2: {size:1024, links:5, blocks:2, dtime: 0}
   Inode References (Index->Block Number): 0->9 
   TYPE: EXT2_S_IFDIR
 INODE 11: {size:12288, links:2, blocks:24, dtime: 0}
@@ -41,9 +39,11 @@ INODE 11: {size:12288, links:2, blocks:24, dtime: 0}
 INODE 12: {size:1024, links:3, blocks:2, dtime: 0}
   Inode References (Index->Block Number): 0->127 
   TYPE: EXT2_S_IFDIR
-INODE 13: {size:1024, links:2, blocks:2, dtime: 0}
+INODE 13: {size:20, links:1, blocks:2, dtime: 0}
   Inode References (Index->Block Number): 0->23 
-  TYPE: EXT2_S_IFDIR
+  TYPE: EXT2_S_IFLNK
+  > 00000000: 2f 6c 65 76 65 6c 31 2f 6c 65 76 65 6c 32 2f 62 /level1/level2/b
+  > 00000010: 66 69 6c 65                                     file
 INODE 16: {size:38, links:1, blocks:2, dtime: 0}
   Inode References (Index->Block Number): 0->41 
   TYPE: EXT2_S_IFREG

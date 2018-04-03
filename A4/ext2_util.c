@@ -50,7 +50,7 @@ struct ext2_dir_entry *get_entry(struct ext2_inode *dir_inode, char *name){
 			cur_dir = (void *)cur_dir + rec_len;
 			char *file_name = malloc(cur_dir->name_len + 1);
 			file_name = strncpy(file_name, cur_dir->name, cur_dir->name_len);
-			file_name[cur_dir->name_len + 1] = '\0';
+			file_name[cur_dir->name_len] = '\0';
 			// find the correspond directroy
 			if(strcmp(file_name, name) == 0){
 				if(cur_dir->file_type == EXT2_FT_DIR){
@@ -97,7 +97,8 @@ struct ext2_dir_entry *check_file(struct ext2_inode *dir_inode, char *name){
 			cur_dir = (void *)cur_dir + rec_len;
 			char *file_name = malloc(cur_dir->name_len + 1);
 			file_name = strncpy(file_name, cur_dir->name, cur_dir->name_len);
-			file_name[cur_dir->name_len + 1] = '\0';
+			file_name[cur_dir->name_len] = '\0';
+			printf("Compare: %s  %s %d\n", file_name, name, strcmp(file_name, name));
 			// find the correspond directroy
 			if(strcmp(file_name, name) == 0){
 				if(cur_dir->file_type == EXT2_FT_REG_FILE){
@@ -324,6 +325,23 @@ int set_inode(unsigned int new_inode_index, unsigned short filetype, unsigned in
 	}
 	return 0;
 }
+
+
+/*
+* get the bit of the inode bitmap by index, return should be 1 or 0
+*/
+int get_inode_bitmap(unsigned int index){
+	index --;
+	int offset = index % BYTE_LENGTH;
+	int prefix = index / BYTE_LENGTH;
+	if (inode_bitmap[prefix] & (1 << offset)){
+		return 1;
+	} else{
+		return 0;
+	}
+}
+
+
 /*
 * set the index of the bitmap to num, num should be 1 or 0
 */
@@ -338,6 +356,22 @@ void set_inode_bitmap(unsigned int index, int num){
 		*byte &= ~(1UL << offset);
 	}
 }
+
+
+/*
+* get the bit of the inode bitmap by index, return should be 1 or 0
+*/
+int get_block_bitmap(unsigned int index){
+	index --;
+	int offset = index % BYTE_LENGTH;
+	int prefix = index / BYTE_LENGTH;
+	if (block_bitmap[prefix] & (1 << offset)){
+		return 1;
+	} else{
+		return 0;
+	}
+}
+
 
 void set_block_bitmap(unsigned int index, int num){
 	int offset = index % 8;
@@ -420,5 +454,91 @@ int mount_ex2(char *disk_path){
 	inode_table = (struct ext2_inode *)(disk + gd->bg_inode_table * EXT2_BLOCK_SIZE);
 	block_bitmap = disk + gd->bg_block_bitmap * EXT2_BLOCK_SIZE;
 	inode_bitmap = disk + gd->bg_inode_bitmap * EXT2_BLOCK_SIZE;
+	return 0;
+}
+
+
+/*
+ * Return if the path is an absolute path
+ */
+int is_not_absolute(char *path) {
+	return !(path[0] == '/');
+}
+
+
+/*
+* return the inode number of the file by given path
+*/
+int get_index(char *path){ 
+
+	int i = EXT2_ROOT_INO;
+	int lengh = strlen(path) + 1;
+	char path_cp[lengh];
+	char *next_dir;
+	char *cur_dir;
+	struct ext2_inode *cur_inode;
+
+	if (is_not_absolute(path)) {
+		fprintf(stderr, "NOT ABSOLUTE PATH ERROR");
+		exit(EINVAL);
+	}
+
+	strncpy(path_cp, path, lengh);
+	path_cp[lengh - 1] = '\0';
+	next_dir = strtok(path_cp, "/");
+
+
+	while(next_dir != NULL){
+		cur_dir = next_dir;
+		printf("NEXT: %s\n", next_dir);
+		next_dir = strtok(NULL, "/");
+		// Check if i in the reversed space
+		if( i > EXT2_ROOT_INO && i < EXT2_GOOD_OLD_FIRST_INO){
+			exit(ENOENT);
+		}
+
+		cur_inode = get_inode_by_num(i);
+		// check cur_inode
+		if(cur_inode->i_size == 0){
+			perror("TARGET FOUND SIZE ZERO");
+			exit(ENOENT);
+		}
+		
+		struct ext2_dir_entry *cur_dir_entry = get_entry(cur_inode, cur_dir);
+		// check cur_dir_entry
+		if (!cur_dir_entry) {
+			if (next_dir) {
+				perror("TARGET NOT FOUND");
+				exit(ENOENT);
+			}
+			cur_dir_entry = check_file(cur_inode, cur_dir);
+			if (!cur_dir_entry) {
+				perror("TARGET NOT FOUND");
+				exit(ENOENT);
+			}
+		} else if (!next_dir) {
+			i = cur_dir_entry->inode;
+			return i;
+		} else if (cur_dir_entry->file_type != EXT2_FT_DIR) {
+			perror("INVALID PATH");
+            		exit(ENOENT);
+		}
+		i = cur_dir_entry->inode;
+	}
+	return i;
+}
+
+
+/*
+ * Return if the imode of inode matched file_type of dir_entry
+ */
+int compare_mode_type(struct ext2_dir_entry *dir_entry, struct ext2_inode *inode) {
+	if ((inode->i_mode & EXT2_S_IFREG) && (dir_entry->file_type == EXT2_FT_REG_FILE)) {
+		return 1;
+	} else if ((inode->i_mode & EXT2_S_IFDIR) && (dir_entry->file_type == EXT2_FT_DIR)) {
+		return 1;
+	} else if ((inode->i_mode & EXT2_S_IFLNK) && (dir_entry->file_type == EXT2_FT_SYMLINK)) {
+		return 1;
+	}
 	return 0;
 }
