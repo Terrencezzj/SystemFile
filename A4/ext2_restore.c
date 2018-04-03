@@ -67,10 +67,10 @@ struct ext2_dir_entry *find_deleted_entry(struct ext2_dir_entry *parent_entry,
 			// Loop through small gap in block
 			while (ent_size + file_size < cur_dir->rec_len) {
 				small_entry = (void *)cur_dir + ent_size;
-				if (is_entry(small_entry)) {
+				if (!is_entry(small_entry)) {
 					char *file_name = malloc(small_entry->name_len + 1);
 					file_name = strncpy(file_name, small_entry->name, small_entry->name_len);
-					file_name[next_dir->name_len] = '\0';
+					file_name[small_entry->name_len] = '\0';
 					// find the correspond directroy
 					if(strcmp(file_name, filename) == 0){
 						if(small_entry->file_type == EXT2_FT_REG_FILE){
@@ -95,6 +95,7 @@ struct ext2_dir_entry *find_deleted_entry(struct ext2_dir_entry *parent_entry,
 	perror("RESTORE ENTRY NOT FOUND");
 	exit(ENOENT);
 	return NULL;
+	}
 }
 
 
