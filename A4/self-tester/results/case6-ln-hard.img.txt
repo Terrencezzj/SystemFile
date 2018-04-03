@@ -31,6 +31,7 @@ Used inodes (Inode NUMBER): 1 2 3 4 5 6 7 8 9 10 11 12 13 16 17
         [12] '..' EXT2_FT_DIR; rec length: 32 
         [16] 'bfile' EXT2_FT_REG_FILE; rec length: 980 
 [17] 'afile' EXT2_FT_REG_FILE; rec length: 16 
+[16] 'bfilelink' EXT2_FT_REG_FILE; rec length: 928 
 
 == INODE DUMP ==
 INODE 2: {size:1024, links:4, blocks:2, dtime: 0}

@@ -98,6 +98,7 @@ int main(int argc, char *argv[]) {
 		// HardLink
 		printf("Hardlink\n");
 		link_inode = src;
+		link_index = src_index;
 		src->i_links_count++;
 		link_entry->file_type = EXT2_FT_REG_FILE;
 	} else {
@@ -112,11 +113,12 @@ int main(int argc, char *argv[]) {
 		link_index = allocate_inode();
 		if (link_index == 0) {
 			// No space for inode
-				perror("NO SPACE FOR INODE");
-				exit(ENOSPC);
+			perror("NO SPACE FOR INODE");
+			exit(ENOSPC);
 		}
+		link_index ++;
 
-		link_inode = get_inode_by_num(link_index);
+		link_inode = get_inode_by_num(link_index + 1);
 		link_inode->i_mode = EXT2_S_IFLNK;
 		link_inode->i_uid = 0;
 		link_inode->i_gid = 0;
@@ -148,7 +150,7 @@ int main(int argc, char *argv[]) {
 	link_entry->rec_len = entry_size(strlen(target_filename));
 	link_entry->name_len = strlen(target_filename);
 	strncpy(link_entry->name, target_filename, link_entry->name_len);
-	printf("Name: %s", link_entry->name);
+	printf("Name: %s\n", link_entry->name);
 	add_entry_to_dir(tgt_dir_entry, link_entry);
 	return 0;
 }

@@ -94,10 +94,10 @@ void fix_file_type(struct ext2_dir_entry *dir_entry) {
  * If not, fix it.
  */
 void fix_inode_inuse(unsigned int index){
-	if (get_inode_bitmap(index) == 0){
+	if (get_inode_bitmap(index - 1) == 0){
 		sb->s_free_inodes_count --;
 		gd->bg_free_inodes_count --;
-		set_inode_bitmap(index, 1);
+		set_inode_bitmap(index - 1, 1);
 		printf("Fixed: inode [%d] not marked as in-use\n", index);
 		fixes_count ++;
 	}
@@ -135,8 +135,8 @@ void fix_blocks_allocated(unsigned int index){
 				fixed_i = ((unsigned int *)(disk + inode->i_block[12] * EXT2_BLOCK_SIZE))[i - 12];
 			}
 			// Check if the data block are allocated in the data bitmap.
-			if (get_block_bitmap(fixed_i) == 0){
-				set_block_bitmap(fixed_i, 1);
+			if (get_block_bitmap(fixed_i - 1) == 0){
+				set_block_bitmap(fixed_i - 1, 1);
 				sb->s_free_blocks_count --;
 				gd->bg_free_blocks_count --;
 				local_fixed_count ++;

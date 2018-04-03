@@ -64,17 +64,17 @@ struct ext2_dir_entry *find_deleted_entry(struct ext2_dir_entry *parent_entry,
 		while (total_size < EXT2_BLOCK_SIZE){
 			ent_size = entry_size(cur_dir->name_len);
 			*rec_len_ptr = ent_size;
-			printf("Entry %s %s\n", filename, cur_dir->name);
-			printf("EntryS %d %d %d\n", ent_size, file_size, cur_dir->rec_len);
+			//printf("Entry %s %s\n", filename, cur_dir->name);
+			//printf("EntryS %d %d %d\n", ent_size, file_size, cur_dir->rec_len);
 			// Loop through small gap in entries
 			while (ent_size + file_size <= cur_dir->rec_len) {
 				small_entry = (void *)cur_dir + ent_size;
-				printf("No\n");
+				//printf("No\n");
 				if (is_entry(small_entry)) {
 					char *file_name = malloc(small_entry->name_len + 1);
 					file_name = strncpy(file_name, small_entry->name, small_entry->name_len);
 					file_name[small_entry->name_len] = '\0';
-					printf("Small %s %s\n", filename, file_name);
+					//printf("Small %s %s\n", filename, file_name);
 					// find the correspond directroy
 					if(strcmp(file_name, filename) == 0){
 						if(small_entry->file_type == EXT2_FT_REG_FILE){
@@ -101,12 +101,12 @@ struct ext2_dir_entry *find_deleted_entry(struct ext2_dir_entry *parent_entry,
 		*rec_len_ptr = ent_size;
 		while (ent_size + file_size <= cur_dir->rec_len) {
 			small_entry = (void *)cur_dir + ent_size;
-			printf("No\n");
+			//printf("No\n");
 			if (is_entry(small_entry)) {
 				char *file_name = malloc(small_entry->name_len + 1);
 				file_name = strncpy(file_name, small_entry->name, small_entry->name_len);
 				file_name[small_entry->name_len] = '\0';
-				printf("Small %s %s\n", filename, file_name);
+				//printf("Small %s %s\n", filename, file_name);
 				// find the correspond directroy
 				if(strcmp(file_name, filename) == 0){
 					if(small_entry->file_type == EXT2_FT_REG_FILE){
@@ -136,7 +136,7 @@ struct ext2_dir_entry *find_deleted_entry(struct ext2_dir_entry *parent_entry,
  */
 void restore(struct ext2_dir_entry *entry, struct ext2_dir_entry *prev_entry, int rec_len){
 	// Unrecoverable if the inode has been reused.
-	if (get_inode_bitmap(entry->inode)){
+	if (get_inode_bitmap(entry->inode - 1)){
 		perror("UNRECOVERBLE");
 		exit(ENOENT);
 	}
@@ -152,7 +152,7 @@ void restore(struct ext2_dir_entry *entry, struct ext2_dir_entry *prev_entry, in
 			block_index = indirect_block[i - 13];
 		}
 		// Unrecoverable if any of the data blocks has been reused.
-		if (get_block_bitmap(block_index)){
+		if (get_block_bitmap(block_index - 1)){
 			perror("UNRECOVERBLE");
 			exit(ENOENT);
 		}
@@ -168,12 +168,12 @@ void restore(struct ext2_dir_entry *entry, struct ext2_dir_entry *prev_entry, in
 				(disk + inode->i_block[12] * EXT2_BLOCK_SIZE);
 			block_index = indirect_block[i - 13];
 		}
-		set_block_bitmap(block_index, 1);
+		set_block_bitmap(block_index - 1, 1);
 		sb->s_free_blocks_count--;
 		gd->bg_free_blocks_count--;
 	}
 	// Restore inode
-	set_inode_bitmap(entry->inode, 1);
+	set_inode_bitmap(entry->inode - 1, 1);
 	sb->s_free_inodes_count--;
 	gd->bg_free_inodes_count--;
 	inode->i_dtime = 0;

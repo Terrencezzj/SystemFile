@@ -280,8 +280,8 @@ int add_entry_to_dir(struct ext2_dir_entry *parent_dir, struct ext2_dir_entry *n
 		while((total_size + cur_dir->rec_len) < EXT2_BLOCK_SIZE){
 			cur_dir = (void *)cur_dir + cur_dir->rec_len;
 			rec_len = cur_dir->rec_len;
-			total_size += rec_len;				 						
-		}		
+			total_size += rec_len;
+		}
 		if (cur_dir->rec_len - entry_size(cur_dir->name_len) >= entry_size(new_dir->name_len)){
 			int cur_dir_old_rec_len = cur_dir->rec_len;
 			int cur_dir_new_rec_len = entry_size(cur_dir->name_len);
@@ -294,6 +294,7 @@ int add_entry_to_dir(struct ext2_dir_entry *parent_dir, struct ext2_dir_entry *n
 			cur_dir->name_len = new_dir->name_len;
 			cur_dir->file_type = new_dir->file_type;
 			strncpy(cur_dir->name, new_dir->name, new_dir->name_len);
+			printf("Inode: %d\n", cur_dir->inode);
 			return 0;
 		}
 		else{
@@ -379,7 +380,6 @@ int set_inode(unsigned int new_inode_index, unsigned short filetype, unsigned in
 * get the bit of the inode bitmap by index, return should be 1 or 0
 */
 int get_inode_bitmap(unsigned int index){
-	index --;
 	int offset = index % BYTE_LENGTH;
 	int prefix = index / BYTE_LENGTH;
 	if (inode_bitmap[prefix] & (1 << offset)){
@@ -394,7 +394,6 @@ int get_inode_bitmap(unsigned int index){
 * set the index of the bitmap to num, num should be 1 or 0
 */
 void set_inode_bitmap(unsigned int index, int num){
-	index --;
 	int offset = index % 8;
 	int prefix = index / 8;
 	unsigned char *byte = inode_bitmap + prefix;
@@ -411,7 +410,6 @@ void set_inode_bitmap(unsigned int index, int num){
 * get the bit of the inode bitmap by index, return should be 1 or 0
 */
 int get_block_bitmap(unsigned int index){
-	index --;
 	int offset = index % BYTE_LENGTH;
 	int prefix = index / BYTE_LENGTH;
 	if (block_bitmap[prefix] & (1 << offset)){
@@ -423,7 +421,6 @@ int get_block_bitmap(unsigned int index){
 
 
 void set_block_bitmap(unsigned int index, int num){
-	index --;
 	int offset = index % 8;
 	int prefix = index / 8;
 	unsigned char *byte = block_bitmap + prefix;
@@ -565,7 +562,7 @@ int get_index(char *path){
 
 	while(next_dir != NULL){
 		cur_dir = next_dir;
-		printf("NEXT: %s\n", next_dir);
+		//printf("NEXT: %s\n", next_dir);
 		next_dir = strtok(NULL, "/");
 		// Check if i in the reversed space
 		if( i > EXT2_ROOT_INO && i < EXT2_GOOD_OLD_FIRST_INO){
