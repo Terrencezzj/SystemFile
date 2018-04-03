@@ -47,13 +47,13 @@ struct ext2_dir_entry *find_deleted_entry(struct ext2_dir_entry *parent_entry,
 		int total_size = 0;
 		int rec_len = 0;
 		if (i < 12){
-			cur_dir = (struct ext2_dir_entry *) (disk + dir_inode->i_block[i] * EXT2_BLOCK_SIZE);
+			cur_dir = (struct ext2_dir_entry *) (disk + parent_inode->i_block[i] * EXT2_BLOCK_SIZE);
 		}
 		// the i_block is contained in the indirect pointer
 		else{
 			// break;
 			unsigned int block_index = ((unsigned int *)
-				(disk + inode->i_block[12] * EXT2_BLOCK_SIZE))[i - 12];
+				(disk + parent_inode->i_block[12] * EXT2_BLOCK_SIZE))[i - 12];
 			cur_dir = (struct ext2_dir_entry *) (disk + block_index * EXT2_BLOCK_SIZE);
 		}
 		if (strncmp(cur_dir->name, filename, cur_dir->name_len) == 0){
@@ -62,12 +62,12 @@ struct ext2_dir_entry *find_deleted_entry(struct ext2_dir_entry *parent_entry,
 		}
 		// Loop through all the blocks
 		while (total_size < EXT2_BLOCK_SIZE){
-			ent_size = entry_size(strlen(cur_dir->name_len));
+			ent_size = entry_size(cur_dir->name_len);
 			*rec_len_ptr = ent_size;
 			// Loop through small gap in block
 			while (ent_size + file_size < cur_dir->rec_len) {
 				small_entry = (void *)cur_dir + ent_size;
-				if (is_entry(next_dir)) {
+				if (is_entry(small_entry)) {
 					char *file_name = malloc(small_entry->name_len + 1);
 					file_name = strncpy(file_name, small_entry->name, small_entry->name_len);
 					file_name[next_dir->name_len] = '\0';
@@ -84,7 +84,7 @@ struct ext2_dir_entry *find_deleted_entry(struct ext2_dir_entry *parent_entry,
 					}
 					free(file_name);
 				}
-				small_ent_size = entry_size(strlen(small_entry->name_len));
+				small_ent_size = entry_size(small_entry->name_len);
 				*rec_len_ptr += small_ent_size;
 				ent_size += small_ent_size;
 			}
@@ -162,6 +162,7 @@ int main(int argc, char **argv) {
 	struct ext2_dir_entry *prev_entry;
 	struct ext2_inode *parent_inode;
 	struct ext2_dir_entry *parent_entry;
+	char *disk_image_path;
 	char *restore_path;
 	char *restore_parent;
 	char *restore_filename;	
@@ -179,7 +180,7 @@ int main(int argc, char **argv) {
 		exit(EINVAL);
 	}
 
-	restore_path = argv[2]
+	restore_path = argv[2];
 	if (restore_path[strlen(restore_path) - 1] == '/') {
 		perror("RESTORE PATH IS DIR");
 		exit(EISDIR);
