@@ -76,9 +76,9 @@ int main(int argc, char *argv[]) {
 	target_filename = basename(target_path);
 	printf("%s %s %s\n",target_path, target_dir_path, target_filename);
 	tgt_dir_index = get_index(target_dir_path);
-	printf("tgt_dir %d\n", tgt_dir_index);
 	tgt_dir_inode = get_inode_by_num(tgt_dir_index);
 	tgt_dir_entry = find_parent_dir(target_dir_path);
+	printf("tgt_dir %s %s\n", target_dir_path, tgt_dir_entry->name);
 	// Check if parent is directory
 	if(!tgt_dir_inode->i_mode & EXT2_S_IFDIR){
 		perror("PARENT OF LINK NOT DIR");
@@ -97,6 +97,7 @@ int main(int argc, char *argv[]) {
 		printf("Hardlink\n");
 		link_inode = src;
 		src->i_links_count++;
+		link_entry->file_type = EXT2_FT_REG_FILE;
 	} else {
 		// softLink
 		printf("softlink\n");
@@ -138,13 +139,14 @@ int main(int argc, char *argv[]) {
     		// Initialize i_block
     		link_inode->i_block[0] = block_index[0];
 		link_inode->i_blocks = blocks_num * 2;
+		link_entry->file_type = EXT2_FT_SYMLINK;
 	}
 	// Set entry
 	link_entry->inode = link_index;
 	link_entry->rec_len = entry_size(strlen(target_filename));
 	link_entry->name_len = strlen(target_filename);
-	link_entry->file_type = EXT2_FT_REG_FILE;
 	strncpy(link_entry->name, target_filename, link_entry->name_len);
+	printf("Name: %s", link_entry->name);
 	add_entry_to_dir(tgt_dir_entry, link_entry);
 	return 0;
 }

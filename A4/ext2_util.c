@@ -263,7 +263,8 @@ int add_entry_to_dir(struct ext2_dir_entry *parent_dir, struct ext2_dir_entry *n
 			cur_dir->name_len = new_dir->name_len;
 			cur_dir->file_type = new_dir->file_type;
 			strncpy(cur_dir->name, new_dir->name, new_dir->name_len);
-			printf("%s\n", cur_dir->name);
+			printf("Add: %s\n", cur_dir->name);
+			printf("Add: %d\n", cur_dir->inode);
 			parent_inode->i_links_count ++;
 			return 0;
 		}
