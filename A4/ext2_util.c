@@ -376,6 +376,21 @@ int set_inode(unsigned int new_inode_index, unsigned short filetype, unsigned in
 
 
 /*
+* get the bit of the inode bitmap by index, return should be 1 or 0
+*/
+int get_inode_bitmap(unsigned int index){
+	index --;
+	int offset = index % BYTE_LENGTH;
+	int prefix = index / BYTE_LENGTH;
+	if (inode_bitmap[prefix] & (1 << offset)){
+		return 1;
+	} else{
+		return 0;
+	}
+}
+
+
+/*
 * set the index of the bitmap to num, num should be 1 or 0
 */
 void set_inode_bitmap(unsigned int index, int num){
@@ -387,6 +402,21 @@ void set_inode_bitmap(unsigned int index, int num){
 	}
 	else{
 		*byte &= ~(1UL << offset);
+	}
+}
+
+
+/*
+* get the bit of the inode bitmap by index, return should be 1 or 0
+*/
+int get_block_bitmap(unsigned int index){
+	index --;
+	int offset = index % BYTE_LENGTH;
+	int prefix = index / BYTE_LENGTH;
+	if (block_bitmap[prefix] & (1 << offset)){
+		return 1;
+	} else{
+		return 0;
 	}
 }
 
