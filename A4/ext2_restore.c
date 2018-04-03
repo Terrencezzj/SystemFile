@@ -97,7 +97,7 @@ struct ext2_dir_entry *find_deleted_entry(struct ext2_dir_entry *parent_entry,
 			total_size += rec_len;						 						
 		}
 		// Check after last entry
-		ent_size = entry_size(cur_dir);
+		ent_size = entry_size(cur_dir->name_len);
 		*rec_len_ptr = ent_size;
 		while (ent_size + file_size <= cur_dir->rec_len) {
 			small_entry = (void *)cur_dir + ent_size;

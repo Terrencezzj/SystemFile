@@ -394,6 +394,7 @@ int get_inode_bitmap(unsigned int index){
 * set the index of the bitmap to num, num should be 1 or 0
 */
 void set_inode_bitmap(unsigned int index, int num){
+	index --;
 	int offset = index % 8;
 	int prefix = index / 8;
 	unsigned char *byte = inode_bitmap + prefix;
@@ -422,6 +423,7 @@ int get_block_bitmap(unsigned int index){
 
 
 void set_block_bitmap(unsigned int index, int num){
+	index --;
 	int offset = index % 8;
 	int prefix = index / 8;
 	unsigned char *byte = block_bitmap + prefix;
@@ -606,11 +608,14 @@ int get_index(char *path){
  * Return if the imode of inode matched file_type of dir_entry
  */
 int compare_mode_type(struct ext2_dir_entry *dir_entry, struct ext2_inode *inode) {
-	if ((inode->i_mode & EXT2_S_IFREG) && (dir_entry->file_type == EXT2_FT_REG_FILE)) {
+	if (((inode->i_mode & EXT2_S_IFREG) == EXT2_S_IFREG)
+		&& (dir_entry->file_type == EXT2_FT_REG_FILE)) {
 		return 1;
-	} else if ((inode->i_mode & EXT2_S_IFDIR) && (dir_entry->file_type == EXT2_FT_DIR)) {
+	} else if (((inode->i_mode & EXT2_S_IFDIR) == EXT2_S_IFDIR)
+		&& (dir_entry->file_type == EXT2_FT_DIR)) {
 		return 1;
-	} else if ((inode->i_mode & EXT2_S_IFLNK) && (dir_entry->file_type == EXT2_FT_SYMLINK)) {
+	} else if (((inode->i_mode & EXT2_S_IFLNK) == EXT2_S_IFLNK)
+		&& (dir_entry->file_type == EXT2_FT_SYMLINK)) {
 		return 1;
 	}
 	return 0;

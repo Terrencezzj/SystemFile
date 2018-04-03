@@ -77,11 +77,11 @@ void fix_file_type(struct ext2_dir_entry *dir_entry) {
 	// if not match, fix it.
 	if (compare_mode_type(dir_entry, inode) == 0){
 		if (inode->i_mode & EXT2_S_IFDIR){
-				dir_entry->file_type = EXT2_FT_DIR;
+			dir_entry->file_type = EXT2_FT_DIR;
 		} else if (inode->i_mode & EXT2_S_IFREG) {
-				dir_entry->file_type = EXT2_FT_REG_FILE;
+			dir_entry->file_type = EXT2_FT_REG_FILE;
 		} else if (inode->i_mode & EXT2_S_IFLNK) {
-					dir_entry->file_type = EXT2_FT_SYMLINK;
+			dir_entry->file_type = EXT2_FT_SYMLINK;
 		}
 		printf("Fixed: Entry type vs inode mismatch: inode [%d]\n", dir_entry->inode);
 		fixes_count ++;
